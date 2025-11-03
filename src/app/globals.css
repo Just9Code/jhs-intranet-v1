@@ -1,0 +1,694 @@
+/* Updated: 2025-11-02T17:00:05.696Z */
+/* Updated: 2025-11-02T16:53:06.525Z */
+/* Updated: 2025-11-02T16:52:15.875Z */
+/* Updated: 2025-11-02T16:48:04.366Z */
+/* Updated: 2025-11-02T12:46:07.183Z */
+/* Updated: 2025-11-02T12:42:30.627Z */
+/* Updated: 2025-11-02T12:39:15.856Z */
+/* Updated: 2025-11-02T12:31:54.750Z */
+/* Updated: 2025-11-02T12:24:57.260Z */
+/* Updated: 2025-11-02T12:23:35.247Z */
+/* Updated: 2025-11-02T12:19:22.522Z */
+/* Updated: 2025-11-02T12:19:21.545Z */
+/* Updated: 2025-11-02T12:17:00.678Z */
+/* Updated: 2025-11-02T11:45:19.185Z */
+/* Updated: 2025-11-02T10:28:28.763Z */
+/* Updated: 2025-11-02T09:45:19.908Z */
+/* Updated: 2025-11-02T09:41:20.493Z */
+/* Updated: 2025-11-01T20:17:53.631Z */
+/* Updated: 2025-11-01T19:58:55.936Z */
+/* Updated: 2025-11-01T19:48:01.649Z */
+/* Updated: 2025-11-01T18:23:05.487Z */
+/* Updated: 2025-11-01T18:13:38.651Z */
+/* Updated: 2025-11-01T18:05:30.278Z */
+/* Updated: 2025-11-01T17:54:59.830Z */
+/* Updated: 2025-11-01T17:44:02.485Z */
+/* Updated: 2025-11-01T17:02:27.287Z */
+/* Updated: 2025-11-01T16:45:08.664Z */
+/* Updated: 2025-11-01T16:40:04.258Z */
+/* Updated: 2025-11-01T16:30:50.512Z */
+/* Updated: 2025-11-01T16:29:07.750Z */
+/* Updated: 2025-11-01T16:04:32.035Z */
+/* Updated: 2025-11-01T16:03:30.233Z */
+/* Updated: 2025-11-01T15:37:47.963Z */
+/* Updated: 2025-11-01T13:38:40.017Z */
+/* Updated: 2025-11-01T13:14:57.640Z */
+/* Updated: 2025-11-01T12:05:47.252Z */
+/* Updated: 2025-11-01T11:54:39.873Z */
+/* Updated: 2025-11-01T11:50:04.201Z */
+/* Updated: 2025-11-01T11:38:15.470Z */
+/* Updated: 2025-11-01T11:26:22.337Z */
+/* Updated: 2025-11-01T11:23:35.670Z */
+/* Updated: 2025-11-01T11:18:36.657Z */
+/* Updated: 2025-11-01T10:47:07.689Z */
+/* Updated: 2025-11-01T10:12:42.729Z */
+/* Updated: 2025-11-01T10:07:15.544Z */
+/* Updated: 2025-11-01T10:06:27.749Z */
+/* Updated: 2025-11-01T10:03:29.043Z */
+/* Updated: 2025-11-01T10:02:17.993Z */
+/* Updated: 2025-11-01T10:01:31.872Z */
+/* Updated: 2025-11-01T09:57:31.193Z */
+/* Updated: 2025-11-01T09:55:39.210Z */
+/* Updated: 2025-11-01T09:51:29.615Z */
+/* Updated: 2025-11-01T09:50:39.135Z */
+/* Updated: 2025-11-01T09:44:02.098Z */
+/* Updated: 2025-11-01T09:29:00.456Z */
+/* Updated: 2025-11-01T08:20:14.330Z */
+/* Updated: 2025-11-01T08:17:12.629Z */
+/* Updated: 2025-11-01T08:09:55.811Z */
+/* Updated: 2025-10-31T20:50:20.966Z */
+/* Updated: 2025-10-31T20:47:56.550Z */
+/* Updated: 2025-10-31T20:44:23.247Z */
+/* Updated: 2025-10-31T20:42:04.271Z */
+/* Updated: 2025-10-31T20:28:55.993Z */
+/* Updated: 2025-10-31T20:16:08.662Z */
+/* Updated: 2025-10-31T20:14:20.345Z */
+/* Updated: 2025-10-31T20:11:11.972Z */
+/* Updated: 2025-10-31T19:28:45.500Z */
+/* Updated: 2025-10-31T19:11:38.336Z */
+/* Updated: 2025-10-31T18:51:29.050Z */
+/* Updated: 2025-10-31T18:49:19.637Z */
+/* Updated: 2025-10-31T18:44:35.224Z */
+/* Updated: 2025-10-31T18:39:40.846Z */
+/* Updated: 2025-10-31T18:38:15.819Z */
+/* Updated: 2025-10-31T18:38:12.068Z */
+/* Updated: 2025-10-31T18:35:56.964Z */
+/* Updated: 2025-10-31T18:34:39.745Z */
+/* Updated: 2025-10-31T18:33:15.283Z */
+/* Updated: 2025-10-31T18:33:04.658Z */
+/* Updated: 2025-10-31T18:32:09.056Z */
+/* Updated: 2025-10-31T18:30:04.079Z */
+/* Updated: 2025-10-31T18:28:49.912Z */
+/* Updated: 2025-10-31T18:26:16.250Z */
+/* Updated: 2025-10-31T18:24:48.706Z */
+/* Updated: 2025-10-31T18:23:30.898Z */
+/* Updated: 2025-10-31T18:21:00.745Z */
+/* Updated: 2025-10-31T18:18:49.760Z */
+/* Updated: 2025-10-31T18:09:11.249Z */
+/* Updated: 2025-10-31T18:03:47.698Z */
+/* Updated: 2025-10-31T17:59:19.283Z */
+/* Updated: 2025-10-31T17:50:18.597Z */
+/* Updated: 2025-10-31T15:56:08.913Z */
+/* Updated: 2025-10-31T15:51:01.158Z */
+/* Updated: 2025-10-31T15:48:52.942Z */
+/* Updated: 2025-10-31T15:45:35.064Z */
+/* Updated: 2025-10-31T15:42:22.539Z */
+/* Updated: 2025-10-31T15:36:39.721Z */
+/* Updated: 2025-10-31T15:31:05.769Z */
+/* Updated: 2025-10-31T15:19:32.647Z */
+/* Updated: 2025-10-31T15:19:07.970Z */
+/* Updated: 2025-10-31T15:10:56.379Z */
+/* Updated: 2025-10-31T15:06:19.257Z */
+/* Updated: 2025-10-31T14:57:33.743Z */
+/* Updated: 2025-10-31T14:48:11.621Z */
+/* Updated: 2025-10-31T14:34:39.734Z */
+/* Updated: 2025-10-31T14:29:33.749Z */
+/* Updated: 2025-10-31T14:19:49.611Z */
+/* Updated: 2025-10-31T14:01:35.699Z */
+/* Updated: 2025-10-31T10:44:17.741Z */
+/* Updated: 2025-10-31T10:37:19.594Z */
+/* Updated: 2025-10-31T10:34:02.681Z */
+/* Updated: 2025-10-31T10:31:06.238Z */
+/* Updated: 2025-10-31T10:30:17.989Z */
+/* Updated: 2025-10-31T10:29:57.378Z */
+/* Updated: 2025-10-31T10:24:08.346Z */
+/* Updated: 2025-10-31T10:19:14.879Z */
+/* Updated: 2025-10-31T10:01:19.828Z */
+/* Updated: 2025-10-31T09:50:20.111Z */
+/* Updated: 2025-10-31T09:49:02.541Z */
+/* Updated: 2025-10-31T09:48:18.783Z */
+/* Updated: 2025-10-31T09:37:08.709Z */
+/* Updated: 2025-10-31T09:37:02.251Z */
+/* Updated: 2025-10-31T09:37:00.048Z */
+/* Updated: 2025-10-31T09:34:21.312Z */
+/* Updated: 2025-10-31T09:06:07.916Z */
+/* Updated: 2025-10-31T09:02:35.980Z */
+/* Updated: 2025-10-31T08:57:46.673Z */
+/* Updated: 2025-10-31T08:50:55.296Z */
+/* Updated: 2025-10-30T23:47:44.164Z */
+/* Updated: 2025-10-30T23:14:27.721Z */
+/* Updated: 2025-10-30T23:11:33.989Z */
+/* Updated: 2025-10-30T23:09:57.779Z */
+/* Updated: 2025-10-30T23:08:55.914Z */
+/* Updated: 2025-10-30T23:04:32.762Z */
+/* Updated: 2025-10-30T23:02:32.075Z */
+/* Updated: 2025-10-30T23:00:39.715Z */
+/* Updated: 2025-10-30T22:52:55.579Z */
+/* Updated: 2025-10-30T22:40:28.595Z */
+/* Updated: 2025-10-30T22:33:14.743Z */
+/* Updated: 2025-10-30T22:30:43.373Z */
+/* Updated: 2025-10-30T22:28:46.195Z */
+/* Updated: 2025-10-30T22:11:10.881Z */
+/* Updated: 2025-10-30T22:10:41.038Z */
+/* Updated: 2025-10-30T22:06:00.717Z */
+/* Updated: 2025-10-30T22:04:50.673Z */
+/* Updated: 2025-10-30T22:04:17.064Z */
+/* Updated: 2025-10-30T21:58:14.617Z */
+/* Updated: 2025-10-30T21:57:45.632Z */
+/* Updated: 2025-10-30T21:55:54.154Z */
+/* Updated: 2025-10-30T21:10:56.768Z */
+/* Updated: 2025-10-30T21:04:09.376Z */
+/* Updated: 2025-10-30T20:53:38.689Z */
+/* Updated: 2025-10-30T20:43:03.820Z */
+/* Updated: 2025-10-30T20:36:01.441Z */
+/* Updated: 2025-10-30T20:32:14.236Z */
+/* Updated: 2025-10-30T20:31:34.270Z */
+/* Updated: 2025-10-30T20:15:50.325Z */
+/* Updated: 2025-10-30T20:13:55.797Z */
+/* Updated: 2025-10-30T20:06:32.526Z */
+/* Updated: 2025-10-30T20:02:46.038Z */
+/* Updated: 2025-10-30T19:52:37.366Z */
+/* Updated: 2025-10-30T19:50:55.358Z */
+/* Updated: 2025-10-30T19:45:54.647Z */
+/* Updated: 2025-10-30T19:31:25.780Z */
+/* Updated: 2025-10-30T19:03:04.357Z */
+/* Updated: 2025-10-30T18:43:12.036Z */
+/* Updated: 2025-10-30T18:38:14.760Z */
+/* Updated: 2025-10-30T18:30:09.560Z */
+/* Updated: 2025-10-30T18:27:25.078Z */
+/* Updated: 2025-10-30T18:15:57.536Z */
+/* Updated: 2025-10-30T17:58:36.953Z */
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+:root {
+  --radius: 0.625rem;
+  /* BTP Color Scheme - Bleu Turquoise Foncé + Gris Anthracite - OKLCH Format */
+  --background: oklch(0.98 0 0);
+  --foreground: oklch(0.20 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.20 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.20 0 0);
+  --primary: oklch(0.72 0.13 200);
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.27 0.02 250);
+  --secondary-foreground: oklch(0.98 0 0);
+  --muted: oklch(0.95 0 0);
+  --muted-foreground: oklch(0.50 0 0);
+  --accent: oklch(0.68 0.12 200);
+  --accent-foreground: oklch(1 0 0);
+  --destructive: oklch(0.62 0.22 25);
+  --border: oklch(0.90 0 0);
+  --input: oklch(0.90 0 0);
+  --ring: oklch(0.72 0.13 200);
+  --chart-1: oklch(0.72 0.13 200);
+  --chart-2: oklch(0.27 0.02 250);
+  --chart-3: oklch(0.70 0.13 200);
+  --chart-4: oklch(0.74 0.13 200);
+  --chart-5: oklch(0.30 0.02 250);
+  --sidebar: oklch(0.27 0.02 250);
+  --sidebar-foreground: oklch(0.98 0 0);
+  --sidebar-primary: oklch(0.72 0.13 200);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.30 0.02 250);
+  --sidebar-accent-foreground: oklch(1 0 0);
+  --sidebar-border: oklch(0.35 0.02 250);
+  --sidebar-ring: oklch(0.72 0.13 200);
+}
+
+.dark {
+  --background: oklch(0.15 0 0);
+  --foreground: oklch(0.98 0 0);
+  --card: oklch(0.18 0 0);
+  --card-foreground: oklch(0.98 0 0);
+  --popover: oklch(0.18 0 0);
+  --popover-foreground: oklch(0.98 0 0);
+  --primary: oklch(0.76 0.13 200);
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.23 0.02 250);
+  --secondary-foreground: oklch(0.98 0 0);
+  --muted: oklch(0.25 0 0);
+  --muted-foreground: oklch(0.65 0 0);
+  --accent: oklch(0.70 0.13 200);
+  --accent-foreground: oklch(1 0 0);
+  --destructive: oklch(0.67 0.22 25);
+  --border: oklch(0.28 0 0);
+  --input: oklch(0.28 0 0);
+  --ring: oklch(0.76 0.13 200);
+  --chart-1: oklch(0.76 0.13 200);
+  --chart-2: oklch(0.25 0.02 250);
+  --chart-3: oklch(0.72 0.13 200);
+  --chart-4: oklch(0.78 0.13 200);
+  --chart-5: oklch(0.35 0.02 250);
+  --sidebar: oklch(0.20 0 0);
+  --sidebar-foreground: oklch(0.98 0 0);
+  --sidebar-primary: oklch(0.76 0.13 200);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.23 0.02 250);
+  --sidebar-accent-foreground: oklch(0.98 0 0);
+  --sidebar-border: oklch(0.28 0 0);
+  --sidebar-ring: oklch(0.76 0.13 200);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Construction-themed animations */
+@keyframes brickBuild {
+  0% {
+    transform: translateY(100px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes excavatorDig {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(-10deg);
+  }
+}
+
+@keyframes concreteFlow {
+  0% {
+    transform: scaleX(0);
+    transform-origin: left;
+  }
+  100% {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes hammerStrike {
+  0%, 100% {
+    transform: rotate(0deg) scale(1);
+  }
+  25% {
+    transform: rotate(-25deg) scale(1.1);
+  }
+  50% {
+    transform: rotate(0deg) scale(0.95);
+  }
+  75% {
+    transform: rotate(5deg) scale(1.05);
+  }
+}
+
+@keyframes trowelCheck {
+  0% {
+    transform: scale(0) rotate(-45deg);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.2) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+@keyframes craneSwing {
+  0%, 100% {
+    transform: rotate(-3deg);
+  }
+  50% {
+    transform: rotate(3deg);
+  }
+}
+
+@keyframes buldozerMove {
+  0% {
+    transform: translateX(-10px);
+  }
+  50% {
+    transform: translateX(10px);
+  }
+  100% {
+    transform: translateX(-10px);
+  }
+}
+
+@keyframes drillSpin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes wheelbarrowRoll {
+  0% {
+    transform: translateX(0) rotate(0deg);
+  }
+  50% {
+    transform: translateX(5px) rotate(180deg);
+  }
+  100% {
+    transform: translateX(0) rotate(360deg);
+  }
+}
+
+@keyframes brickLayer {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  25% {
+    transform: translateY(-5px);
+  }
+  50% {
+    transform: translateY(0);
+  }
+  75% {
+    transform: translateY(-3px);
+  }
+}
+
+@keyframes constructionPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.8;
+  }
+}
+
+@keyframes floatUp {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-20px) scale(1.1);
+    opacity: 0.7;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+@keyframes glowPulse {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(0, 200, 200, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(0, 200, 200, 0.6);
+  }
+}
+
+@keyframes slideInBounce {
+  0% {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  60% {
+    transform: translateX(10px);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideUpBounce {
+  0% {
+    transform: translateY(60px);
+    opacity: 0;
+  }
+  70% {
+    transform: translateY(-10px);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+@keyframes ripple {
+  0% {
+    transform: scale(0);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+@keyframes sparkle {
+  0%, 100% {
+    transform: scale(0) rotate(0deg);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1) rotate(180deg);
+    opacity: 1;
+  }
+}
+
+@keyframes waveMove {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes bounceSlow {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+@keyframes floatGentle {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes oscillate {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(-1deg);
+  }
+  75% {
+    transform: rotate(1deg);
+  }
+}
+
+@keyframes scaleBreath {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Scroll animation styles for mobile */
+@media (max-width: 767px) {
+  .scroll-animate {
+    opacity: 0;
+    transform: translateY(60px);
+    transition: none;
+  }
+  
+  .scroll-animate.slide-in-view {
+    animation: slideUpBounce 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+  
+  /* Staggered delays for multiple elements */
+  .scroll-animate:nth-child(1).slide-in-view {
+    animation-delay: 0s;
+  }
+  
+  .scroll-animate:nth-child(2).slide-in-view {
+    animation-delay: 0.1s;
+  }
+  
+  .scroll-animate:nth-child(3).slide-in-view {
+    animation-delay: 0.2s;
+  }
+  
+  .scroll-animate:nth-child(4).slide-in-view {
+    animation-delay: 0.3s;
+  }
+  
+  .scroll-animate:nth-child(5).slide-in-view {
+    animation-delay: 0.4s;
+  }
+  
+  .scroll-animate:nth-child(6).slide-in-view {
+    animation-delay: 0.5s;
+  }
+}
+
+.animate-brick-build {
+  animation: brickBuild 0.6s ease-out;
+}
+
+.animate-excavator-dig {
+  animation: excavatorDig 2s ease-in-out infinite;
+}
+
+.animate-concrete-flow {
+  animation: concreteFlow 0.8s ease-out;
+}
+
+.animate-hammer-strike {
+  animation: hammerStrike 0.6s ease-out;
+}
+
+.animate-trowel-check {
+  animation: trowelCheck 0.5s ease-out;
+}
+
+.animate-crane-swing {
+  animation: craneSwing 3s ease-in-out infinite;
+}
+
+.animate-buldozer-move {
+  animation: buldozerMove 4s ease-in-out infinite;
+}
+
+.animate-drill-spin {
+  animation: drillSpin 2s linear infinite;
+}
+
+.animate-wheelbarrow-roll {
+  animation: wheelbarrowRoll 3s ease-in-out infinite;
+}
+
+.animate-brick-layer {
+  animation: brickLayer 1.5s ease-in-out infinite;
+}
+
+.animate-construction-pulse {
+  animation: constructionPulse 2s ease-in-out infinite;
+}
+
+.animate-float-up {
+  animation: floatUp 2s ease-in-out infinite alternate;
+}
+
+.animate-shimmer {
+  animation: shimmer 3s linear infinite;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  background-size: 1000px 100%;
+}
+
+.animate-glow-pulse {
+  animation: glowPulse 2s ease-in-out infinite;
+}
+
+.animate-slide-bounce {
+  animation: slideInBounce 0.8s ease-out;
+}
+
+.animate-ripple {
+  animation: ripple 1s ease-out;
+}
+
+.animate-sparkle {
+  animation: sparkle 1.5s ease-in-out infinite;
+}
+
+.animate-wave {
+  animation: waveMove 20s linear infinite;
+}
+
+.animate-bounce-slow {
+  animation: bounceSlow 2s ease-in-out infinite;
+}
+
+/* Gradient backgrounds for BTP theme - Turquoise + Anthracite */
+.bg-construction-gradient {
+  background: linear-gradient(135deg, rgb(55, 60, 71) 0%, rgb(0, 191, 191) 100%);
+}
+
+.bg-construction-gradient-soft {
+  background: linear-gradient(135deg, rgb(65, 70, 81) 0%, rgb(0, 166, 166) 80%);
+}
+
+.bg-turquoise-glow {
+  background: radial-gradient(circle at center, rgba(0, 191, 191, 0.2) 0%, transparent 70%);
+}
+
+/* Hide Next.js error overlay portal */
+nextjs-portal {
+  display: none !important;
+}

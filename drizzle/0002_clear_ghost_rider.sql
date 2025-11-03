@@ -1,0 +1,1 @@
+ALTER TABLE `invoices_quotes` ADD `pdf_url` text;

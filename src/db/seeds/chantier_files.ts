@@ -1,0 +1,191 @@
+import { db } from '@/db';
+import { chantierFiles } from '@/db/schema';
+
+async function main() {
+    const sampleChantierFiles = [
+        {
+            chantierId: 1,
+            fileName: 'Devis Rénovation Villa.pdf',
+            fileUrl: '/uploads/devis_villa_bordeaux.pdf',
+            fileType: 'devis',
+            uploadedBy: 2,
+            uploadedAt: '2024-01-10T00:00:00.000Z',
+        },
+        {
+            chantierId: 1,
+            fileName: 'Photo Avant Travaux.jpg',
+            fileUrl: '/uploads/photo_avant_villa.jpg',
+            fileType: 'photo',
+            uploadedBy: 2,
+            uploadedAt: '2024-01-12T00:00:00.000Z',
+        },
+        {
+            chantierId: 2,
+            fileName: 'Facture Ciment et Sable.pdf',
+            fileUrl: '/uploads/facture_materiaux_lyon.pdf',
+            fileType: 'facture_materiau',
+            uploadedBy: 3,
+            uploadedAt: '2024-01-15T00:00:00.000Z',
+        },
+        {
+            chantierId: 2,
+            fileName: 'Plan Architecture Immeuble.pdf',
+            fileUrl: '/uploads/plan_immeuble_lyon.pdf',
+            fileType: 'pdf',
+            uploadedBy: 3,
+            uploadedAt: '2024-01-18T00:00:00.000Z',
+        },
+        {
+            chantierId: 3,
+            fileName: 'Facture Client Extension.pdf',
+            fileUrl: '/uploads/facture_client_toulouse.pdf',
+            fileType: 'facture_client',
+            uploadedBy: 2,
+            uploadedAt: '2024-01-22T00:00:00.000Z',
+        },
+        {
+            chantierId: 5,
+            fileName: 'Video Excavation Piscine.mp4',
+            fileUrl: '/uploads/video_piscine_marseille.mp4',
+            fileType: 'video',
+            uploadedBy: 2,
+            uploadedAt: '2024-01-25T00:00:00.000Z',
+        },
+        {
+            chantierId: 3,
+            fileName: 'Photo Fondations Extension.jpg',
+            fileUrl: '/uploads/photo_fondations_toulouse.jpg',
+            fileType: 'photo',
+            uploadedBy: 3,
+            uploadedAt: '2024-02-02T00:00:00.000Z',
+        },
+        {
+            chantierId: 5,
+            fileName: 'Facture Carrelage Piscine.pdf',
+            fileUrl: '/uploads/facture_carrelage_marseille.pdf',
+            fileType: 'facture_materiau',
+            uploadedBy: 3,
+            uploadedAt: '2024-02-08T00:00:00.000Z',
+        },
+        {
+            chantierId: 7,
+            fileName: 'Devis Appartement Cannes.pdf',
+            fileUrl: '/uploads/devis_cannes.pdf',
+            fileType: 'devis',
+            uploadedBy: 2,
+            uploadedAt: '2024-02-05T00:00:00.000Z',
+        },
+        {
+            chantierId: 8,
+            fileName: 'Photo Garage Terminé.jpg',
+            fileUrl: '/uploads/garage_nantes_final.jpg',
+            fileType: 'photo',
+            uploadedBy: 3,
+            uploadedAt: '2024-02-01T00:00:00.000Z',
+        },
+        {
+            chantierId: 10,
+            fileName: 'Facture Tuiles Toiture.pdf',
+            fileUrl: '/uploads/facture_tuiles_lille.pdf',
+            fileType: 'facture_materiau',
+            uploadedBy: 3,
+            uploadedAt: '2024-03-16T00:00:00.000Z',
+        },
+        {
+            chantierId: 10,
+            fileName: 'Photo Chantier Toiture.jpg',
+            fileUrl: '/uploads/photo_toiture_lille.jpg',
+            fileType: 'photo',
+            uploadedBy: 3,
+            uploadedAt: '2024-03-18T00:00:00.000Z',
+        },
+        {
+            chantierId: 11,
+            fileName: 'Photo Véranda Terminée.jpg',
+            fileUrl: '/uploads/veranda_rennes_final.jpg',
+            fileType: 'photo',
+            uploadedBy: 2,
+            uploadedAt: '2024-02-16T00:00:00.000Z',
+        },
+        {
+            chantierId: 12,
+            fileName: 'Devis Ravalement Façade.pdf',
+            fileUrl: '/uploads/devis_facade_montpellier.pdf',
+            fileType: 'devis',
+            uploadedBy: 3,
+            uploadedAt: '2024-02-12T00:00:00.000Z',
+        },
+        {
+            chantierId: 12,
+            fileName: 'Photo Avant Ravalement.jpg',
+            fileUrl: '/uploads/avant_facade_montpellier.jpg',
+            fileType: 'photo',
+            uploadedBy: 3,
+            uploadedAt: '2024-02-20T00:00:00.000Z',
+        },
+        {
+            chantierId: 1,
+            fileName: 'Facture Plomberie Villa.pdf',
+            fileUrl: '/uploads/facture_plomberie_bordeaux.pdf',
+            fileType: 'facture_materiau',
+            uploadedBy: 2,
+            uploadedAt: '2024-02-25T00:00:00.000Z',
+        },
+        {
+            chantierId: 2,
+            fileName: 'Video Avancement Immeuble.mp4',
+            fileUrl: '/uploads/video_immeuble_lyon.mp4',
+            fileType: 'video',
+            uploadedBy: 3,
+            uploadedAt: '2024-03-05T00:00:00.000Z',
+        },
+        {
+            chantierId: 7,
+            fileName: 'Facture Cuisine Cannes.pdf',
+            fileUrl: '/uploads/facture_cuisine_cannes.pdf',
+            fileType: 'facture_client',
+            uploadedBy: 2,
+            uploadedAt: '2024-03-10T00:00:00.000Z',
+        },
+        {
+            chantierId: 5,
+            fileName: 'Plan Technique Piscine.pdf',
+            fileUrl: '/uploads/plan_piscine_marseille.pdf',
+            fileType: 'pdf',
+            uploadedBy: 2,
+            uploadedAt: '2024-03-01T00:00:00.000Z',
+        },
+        {
+            chantierId: 7,
+            fileName: 'Photo Salle de Bain Rénovée.jpg',
+            fileUrl: '/uploads/sdb_cannes.jpg',
+            fileType: 'photo',
+            uploadedBy: 2,
+            uploadedAt: '2024-03-15T00:00:00.000Z',
+        },
+        {
+            chantierId: 10,
+            fileName: 'Facture Isolation Toiture.pdf',
+            fileUrl: '/uploads/facture_isolation_lille.pdf',
+            fileType: 'facture_materiau',
+            uploadedBy: 3,
+            uploadedAt: '2024-03-20T00:00:00.000Z',
+        },
+        {
+            chantierId: 12,
+            fileName: 'Photo Façade En Cours.jpg',
+            fileUrl: '/uploads/facade_encours_montpellier.jpg',
+            fileType: 'photo',
+            uploadedBy: 3,
+            uploadedAt: '2024-03-22T00:00:00.000Z',
+        },
+    ];
+
+    await db.insert(chantierFiles).values(sampleChantierFiles);
+    
+    console.log('✅ Chantier files seeder completed successfully');
+}
+
+main().catch((error) => {
+    console.error('❌ Seeder failed:', error);
+});

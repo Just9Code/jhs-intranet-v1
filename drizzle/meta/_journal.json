@@ -1,0 +1,55 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1761841560288,
+      "tag": "0000_groovy_star_brand",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1761904291346,
+      "tag": "0001_safe_zuras",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1762109315365,
+      "tag": "0002_clear_ghost_rider",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1762113758840,
+      "tag": "0003_condemned_shatterstar",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1762113842582,
+      "tag": "0004_remarkable_morph",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1762120543628,
+      "tag": "0005_needy_blue_marvel",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1762124454042,
+      "tag": "0006_nosy_nicolaos",
+      "breakpoints": true
+    }
+  ]
+}
