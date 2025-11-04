@@ -444,6 +444,33 @@ export default function ChantiersPage() {
 
   const handleDocumentDownload = async (file: ChantierFile) => {
     try {
+      // Check if fileUrl is a Supabase URL (starts with http/https)
+      if (file.fileUrl.startsWith('http://') || file.fileUrl.startsWith('https://')) {
+        // Download from Supabase Storage URL
+        const response = await fetch(file.fileUrl);
+        if (!response.ok) {
+          throw new Error('Failed to fetch file from storage');
+        }
+        
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = file.fileName;
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        
+        setTimeout(() => {
+          document.body.removeChild(link);
+          window.URL.revokeObjectURL(url);
+        }, 100);
+        
+        toast.success('Téléchargement démarré');
+        return;
+      }
+      
+      // Legacy base64 support (for old files)
       let base64Data = file.fileUrl;
       let mimeType = 'application/pdf';
       
@@ -900,6 +927,15 @@ export default function ChantiersPage() {
                         <TabsContent value="info" className="space-y-2 mt-0">
                           {/* Compact info grid with glassmorphism */}
                           <div className="grid grid-cols-2 gap-1.5">
+                            {/* Adresse complète */}
+                            <div className="col-span-2 p-2.5 bg-gradient-to-br from-primary/10 via-cyan-500/5 to-transparent backdrop-blur-xl border border-white/10 rounded-lg">
+                              <div className="flex items-center gap-1 mb-1">
+                                <MapPin className="h-3 w-3 text-primary" />
+                                <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider">Adresse</span>
+                              </div>
+                              <p className="text-[12px] font-semibold text-white leading-relaxed">{selectedChantier.address}</p>
+                            </div>
+
                             {/* Client */}
                             <div className="p-2 bg-gradient-to-br from-primary/10 via-cyan-500/5 to-transparent backdrop-blur-xl border border-white/10 rounded-lg">
                               <div className="flex items-center gap-1 mb-0.5">
@@ -934,6 +970,34 @@ export default function ChantiersPage() {
                                 <span className="text-[8px] font-bold text-zinc-400 uppercase tracking-wider">Fin</span>
                               </div>
                               <p className="text-[11px] font-semibold text-white">{formatDate(selectedChantier.endDate)}</p>
+                            </div>
+
+                            {/* Statut */}
+                            <div className="p-2 bg-gradient-to-br from-purple-500/10 via-indigo-500/5 to-transparent backdrop-blur-xl border border-white/10 rounded-lg">
+                              <div className="flex items-center gap-1 mb-0.5">
+                                <AlertCircle className="h-3 w-3 text-purple-400" />
+                                <span className="text-[8px] font-bold text-zinc-400 uppercase tracking-wider">Statut</span>
+                              </div>
+                              <div className="mt-1">
+                                {getStatusBadge(selectedChantier.status)}
+                              </div>
+                            </div>
+
+                            {/* Date de création */}
+                            <div className="p-2 bg-gradient-to-br from-blue-500/10 via-sky-500/5 to-transparent backdrop-blur-xl border border-white/10 rounded-lg">
+                              <div className="flex items-center gap-1 mb-0.5">
+                                <Calendar className="h-3 w-3 text-blue-400" />
+                                <span className="text-[8px] font-bold text-zinc-400 uppercase tracking-wider">Créé le</span>
+                              </div>
+                              <p className="text-[11px] font-semibold text-white">
+                                {new Date(selectedChantier.createdAt).toLocaleDateString('fr-FR', { 
+                                  day: '2-digit', 
+                                  month: '2-digit', 
+                                  year: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </p>
                             </div>
                           </div>
 

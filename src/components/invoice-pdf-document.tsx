@@ -309,11 +309,10 @@ export const InvoicePDFDocument: React.FC<InvoicePDFDocumentProps> = ({
 
       {/* Recipient Info (Right Aligned) */}
       <View style={styles.recipientSection}>
-        <Text style={styles.recipientTitle}>DELAGARDE COMPAGNONS FAÇADIERS</Text>
+        <Text style={styles.recipientTitle}>JHS ENTREPRISE</Text>
         <Text style={styles.recipientText}>
-          370, Rue Georges Claude{'\n'}
-          Pôle d'activités d'Aix en Provence{'\n'}
-          13852 Aix en Provence Cedex 3{'\n'}
+          3 Avenue Claude Monet{'\n'}
+          13014 Marseille{'\n'}
           France
         </Text>
       </View>
@@ -421,7 +420,7 @@ export const InvoicePDFDocument: React.FC<InvoicePDFDocumentProps> = ({
           </View>
           <View style={styles.footerDivider} />
           <Text style={styles.footerCopyright}>
-            © 2023 JHS Entreprise - Tous droits réservés
+            © 2025 JHS Entreprise - Tous droits réservés
           </Text>
         </View>
       </View>

@@ -2,9 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { auditLogs, users } from '@/db/schema';
 import { eq, and, gte, lte, desc, sql } from 'drizzle-orm';
+import { requireRole } from '@/lib/rbac';
 
 export async function GET(request: NextRequest) {
   try {
+    // Only admin can view audit logs
+    const authResult = await requireRole(request, ['admin']);
+    if (authResult instanceof NextResponse) return authResult;
+    const { user } = authResult;
+
     const searchParams = request.nextUrl.searchParams;
     const id = searchParams.get('id');
 

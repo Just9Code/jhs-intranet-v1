@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "JHS ENTREPRISE - Intranet BTP",
-  description: "Plateforme de gestion complète pour professionnels du BTP",
+  title: "JHS ENTREPRISE - Intranet",
+  description: "Plateforme de gestion complète",
   icons: {
     icon: "https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/render/image/public/document-uploads/JHS-LOGO-BLEU-SANS-FOND-1761855434873.png",
   },

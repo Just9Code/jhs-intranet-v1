@@ -2,11 +2,28 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { stockMateriaux } from '@/db/schema';
 import { eq, like, and } from 'drizzle-orm';
+import { requireRole } from '@/lib/rbac';
+import { logAudit, AuditActions, ResourceTypes } from '@/lib/audit-logger';
 
 const VALID_STATUSES = ['disponible', 'emprunte', 'maintenance'];
 
+// Helper to extract IP and User-Agent
+function getRequestMetadata(request: NextRequest) {
+  return {
+    ipAddress: request.headers.get('x-forwarded-for')?.split(',')[0] || 
+               request.headers.get('x-real-ip') || 
+               'unknown',
+    userAgent: request.headers.get('user-agent') || 'unknown',
+  };
+}
+
 export async function GET(request: NextRequest) {
   try {
+    // Require admin or travailleur role
+    const authResult = await requireRole(request, ['admin', 'travailleur']);
+    if (authResult instanceof NextResponse) return authResult;
+    const { user } = authResult;
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
@@ -67,6 +84,12 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    // Require admin or travailleur role
+    const authResult = await requireRole(request, ['admin', 'travailleur']);
+    if (authResult instanceof NextResponse) return authResult;
+    const { user } = authResult;
+
+    const metadata = getRequestMetadata(request);
     const body = await request.json();
     const { name, quantity, unit, status } = body;
 
@@ -126,6 +149,21 @@ export async function POST(request: NextRequest) {
       })
       .returning();
 
+    // Log creation
+    await logAudit({
+      userId: user.id,
+      action: AuditActions.CREATE_STOCK_MATERIAU,
+      resourceType: ResourceTypes.STOCK_MATERIAU,
+      resourceId: newMateriau[0].id,
+      ...metadata,
+      details: { 
+        name: newMateriau[0].name,
+        quantity: newMateriau[0].quantity,
+        unit: newMateriau[0].unit,
+        status: newMateriau[0].status,
+      },
+    });
+
     return NextResponse.json(newMateriau[0], { status: 201 });
   } catch (error) {
     console.error('POST error:', error);
@@ -138,6 +176,12 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    // Require admin or travailleur role
+    const authResult = await requireRole(request, ['admin', 'travailleur']);
+    if (authResult instanceof NextResponse) return authResult;
+    const { user } = authResult;
+
+    const metadata = getRequestMetadata(request);
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
@@ -224,6 +268,20 @@ export async function PUT(request: NextRequest) {
       .where(eq(stockMateriaux.id, materiauId))
       .returning();
 
+    // Log update
+    await logAudit({
+      userId: user.id,
+      action: AuditActions.UPDATE_STOCK_MATERIAU,
+      resourceType: ResourceTypes.STOCK_MATERIAU,
+      resourceId: materiauId,
+      ...metadata,
+      details: { 
+        changes: Object.keys(updates).filter(k => k !== 'updatedAt'),
+        previousName: existing[0].name,
+        newName: updated[0].name,
+      },
+    });
+
     return NextResponse.json(updated[0], { status: 200 });
   } catch (error) {
     console.error('PUT error:', error);
@@ -236,6 +294,12 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    // Require admin or travailleur role
+    const authResult = await requireRole(request, ['admin', 'travailleur']);
+    if (authResult instanceof NextResponse) return authResult;
+    const { user } = authResult;
+
+    const metadata = getRequestMetadata(request);
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
@@ -268,6 +332,20 @@ export async function DELETE(request: NextRequest) {
       .delete(stockMateriaux)
       .where(eq(stockMateriaux.id, materiauId))
       .returning();
+
+    // Log deletion
+    await logAudit({
+      userId: user.id,
+      action: AuditActions.DELETE_STOCK_MATERIAU,
+      resourceType: ResourceTypes.STOCK_MATERIAU,
+      resourceId: materiauId,
+      ...metadata,
+      details: { 
+        deletedName: deleted[0].name,
+        deletedQuantity: deleted[0].quantity,
+        deletedUnit: deleted[0].unit,
+      },
+    });
 
     return NextResponse.json(
       {

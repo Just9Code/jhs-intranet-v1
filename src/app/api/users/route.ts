@@ -3,6 +3,9 @@ import { db } from '@/db';
 import { users } from '@/db/schema';
 import { eq, like, or, and, sql } from 'drizzle-orm';
 import bcrypt from 'bcrypt';
+import { requireAuth, requireRole, canModifyUser } from '@/lib/rbac';
+import { logAudit, AuditActions, ResourceTypes } from '@/lib/audit-logger';
+import { sanitizeString, validateEmail as validateEmailUtil, validateInput } from '@/lib/validation';
 
 // Helper function to validate email format
 function isValidEmail(email: string): boolean {
@@ -16,8 +19,23 @@ function sanitizeUser(user: any) {
   return sanitizedUser;
 }
 
+// Helper to extract IP and User-Agent
+function getRequestMetadata(request: NextRequest) {
+  return {
+    ipAddress: request.headers.get('x-forwarded-for')?.split(',')[0] || 
+               request.headers.get('x-real-ip') || 
+               'unknown',
+    userAgent: request.headers.get('user-agent') || 'unknown',
+  };
+}
+
 export async function GET(request: NextRequest) {
   try {
+    // Require authentication
+    const authResult = await requireAuth(request);
+    if (authResult instanceof NextResponse) return authResult;
+    const { user: currentUser } = authResult;
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
@@ -27,6 +45,18 @@ export async function GET(request: NextRequest) {
         return NextResponse.json(
           { error: 'Valid ID is required', code: 'INVALID_ID' },
           { status: 400 }
+        );
+      }
+
+      const targetUserId = parseInt(id);
+
+      // Check if user can view this profile
+      // Admin: can view all
+      // Others: can only view their own profile
+      if (currentUser.role !== 'admin' && currentUser.id !== targetUserId) {
+        return NextResponse.json(
+          { error: 'Accès refusé - Vous ne pouvez voir que votre propre profil', code: 'FORBIDDEN' },
+          { status: 403 }
         );
       }
 
@@ -44,7 +74,7 @@ export async function GET(request: NextRequest) {
           lastLogin: users.lastLogin,
         })
         .from(users)
-        .where(eq(users.id, parseInt(id)))
+        .where(eq(users.id, targetUserId))
         .limit(1);
 
       if (result.length === 0) {
@@ -63,22 +93,6 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search');
     const role = searchParams.get('role');
     const status = searchParams.get('status');
-
-    // Build base query
-    let query = db
-      .select({
-        id: users.id,
-        email: users.email,
-        name: users.name,
-        role: users.role,
-        status: users.status,
-        phone: users.phone,
-        address: users.address,
-        photoUrl: users.photoUrl,
-        createdAt: users.createdAt,
-        lastLogin: users.lastLogin,
-      })
-      .from(users);
 
     // Build conditions array
     const conditions = [];
@@ -103,7 +117,34 @@ export async function GET(request: NextRequest) {
       conditions.push(eq(users.status, status));
     }
 
-    // Apply all conditions and execute query
+    // For non-admin users: return minimal information (id, name, role only)
+    // This allows them to see user names in chantiers/stock UI
+    if (currentUser.role !== 'admin') {
+      const results = conditions.length > 0
+        ? await db
+            .select({
+              id: users.id,
+              name: users.name,
+              role: users.role,
+            })
+            .from(users)
+            .where(and(...conditions))
+            .limit(limit)
+            .offset(offset)
+        : await db
+            .select({
+              id: users.id,
+              name: users.name,
+              role: users.role,
+            })
+            .from(users)
+            .limit(limit)
+            .offset(offset);
+
+      return NextResponse.json(results, { status: 200 });
+    }
+
+    // For admin: return full information
     const results = conditions.length > 0
       ? await db
           .select({
@@ -151,6 +192,12 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    // Only admin can create users
+    const authResult = await requireRole(request, ['admin']);
+    if (authResult instanceof NextResponse) return authResult;
+    const { user: currentUser } = authResult;
+
+    const metadata = getRequestMetadata(request);
     const body = await request.json();
     const { email, password, name, role, photoUrl, phone, address, status } = body;
 
@@ -191,14 +238,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Sanitize and validate email
-    const sanitizedEmail = email.trim().toLowerCase();
-    if (!isValidEmail(sanitizedEmail)) {
+    // ✅ SANITIZE AND VALIDATE EMAIL
+    const emailValidation = validateEmailUtil(email);
+    if (!emailValidation.valid) {
       return NextResponse.json(
-        { error: 'Invalid email format', code: 'INVALID_EMAIL_FORMAT' },
+        { error: emailValidation.error || 'Invalid email format', code: 'INVALID_EMAIL_FORMAT' },
         { status: 400 }
       );
     }
+    const sanitizedEmail = emailValidation.sanitized;
+
+    // ✅ SANITIZE NAME
+    const nameValidation = validateInput(name, 'Name');
+    if (!nameValidation.valid) {
+      return NextResponse.json(
+        { error: nameValidation.error, code: 'INVALID_INPUT' },
+        { status: 400 }
+      );
+    }
+    const sanitizedName = nameValidation.sanitized;
+
+    // ✅ SANITIZE OPTIONAL FIELDS
+    const sanitizedPhone = phone ? sanitizeString(phone) : null;
+    const sanitizedAddress = address ? sanitizeString(address) : null;
 
     // Validate role
     const validRoles = ['admin', 'travailleur', 'client'];
@@ -220,7 +282,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Check if email already exists in users table
+    // Check if email already exists
     const existingUser = await db
       .select()
       .from(users)
@@ -237,15 +299,15 @@ export async function POST(request: NextRequest) {
     // Hash password
     const passwordHash = await bcrypt.hash(password, 10);
 
-    // Prepare insert data for users table
+    // Prepare insert data
     const insertData = {
       email: sanitizedEmail,
       passwordHash,
-      name: name.trim(),
+      name: sanitizedName,
       role,
       photoUrl: photoUrl || null,
-      phone: phone || null,
-      address: address || null,
+      phone: sanitizedPhone,
+      address: sanitizedAddress,
       status: status || 'active',
       createdAt: new Date().toISOString(),
       lastLogin: null,
@@ -253,6 +315,20 @@ export async function POST(request: NextRequest) {
 
     // Insert user
     const newUser = await db.insert(users).values(insertData).returning();
+
+    // Log creation
+    await logAudit({
+      userId: currentUser.id,
+      action: AuditActions.CREATE_USER,
+      resourceType: ResourceTypes.USER,
+      resourceId: newUser[0].id,
+      ...metadata,
+      details: { 
+        createdUserEmail: newUser[0].email,
+        createdUserRole: newUser[0].role,
+        createdUserName: newUser[0].name,
+      },
+    });
 
     return NextResponse.json(sanitizeUser(newUser[0]), { status: 201 });
   } catch (error: any) {
@@ -266,6 +342,12 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    // Require authentication
+    const authResult = await requireAuth(request);
+    if (authResult instanceof NextResponse) return authResult;
+    const { user: currentUser } = authResult;
+
+    const metadata = getRequestMetadata(request);
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
@@ -277,11 +359,30 @@ export async function PUT(request: NextRequest) {
       );
     }
 
+    const targetUserId = parseInt(id);
+
+    // Check if user can modify this profile
+    if (!canModifyUser(currentUser, targetUserId)) {
+      await logAudit({
+        userId: currentUser.id,
+        action: AuditActions.UPDATE_USER,
+        resourceType: ResourceTypes.USER,
+        resourceId: targetUserId,
+        ...metadata,
+        details: { error: 'Access denied', attemptedRole: currentUser.role },
+      });
+
+      return NextResponse.json(
+        { error: 'Accès refusé - Vous ne pouvez modifier que votre propre profil', code: 'FORBIDDEN' },
+        { status: 403 }
+      );
+    }
+
     // Check if user exists
     const existingUser = await db
       .select()
       .from(users)
-      .where(eq(users.id, parseInt(id)))
+      .where(eq(users.id, targetUserId))
       .limit(1);
 
     if (existingUser.length === 0) {
@@ -299,19 +400,21 @@ export async function PUT(request: NextRequest) {
 
     // Validate and update email if provided
     if (email !== undefined) {
-      const sanitizedEmail = email.trim().toLowerCase();
-      if (!isValidEmail(sanitizedEmail)) {
+      // ✅ SANITIZE AND VALIDATE EMAIL
+      const emailValidation = validateEmailUtil(email);
+      if (!emailValidation.valid) {
         return NextResponse.json(
-          { error: 'Invalid email format', code: 'INVALID_EMAIL_FORMAT' },
+          { error: emailValidation.error || 'Invalid email format', code: 'INVALID_EMAIL_FORMAT' },
           { status: 400 }
         );
       }
+      const sanitizedEmail = emailValidation.sanitized;
 
       // Check if new email already exists (excluding current user)
       const emailExists = await db
         .select()
         .from(users)
-        .where(and(eq(users.email, sanitizedEmail), eq(users.id, parseInt(id))))
+        .where(and(eq(users.email, sanitizedEmail), eq(users.id, targetUserId)))
         .limit(1);
 
       if (emailExists.length === 0) {
@@ -351,11 +454,19 @@ export async function PUT(request: NextRequest) {
           { status: 400 }
         );
       }
-      userUpdates.name = name.trim();
+      // ✅ SANITIZE NAME
+      userUpdates.name = sanitizeString(name);
     }
 
-    // Validate and update role if provided
+    // Validate and update role if provided (admin only)
     if (role !== undefined) {
+      if (currentUser.role !== 'admin') {
+        return NextResponse.json(
+          { error: 'Seuls les administrateurs peuvent modifier les rôles', code: 'FORBIDDEN' },
+          { status: 403 }
+        );
+      }
+
       const validRoles = ['admin', 'travailleur', 'client'];
       if (!validRoles.includes(role)) {
         return NextResponse.json(
@@ -366,8 +477,15 @@ export async function PUT(request: NextRequest) {
       userUpdates.role = role;
     }
 
-    // Validate and update status if provided
+    // Validate and update status if provided (admin only)
     if (status !== undefined) {
+      if (currentUser.role !== 'admin') {
+        return NextResponse.json(
+          { error: 'Seuls les administrateurs peuvent modifier le statut', code: 'FORBIDDEN' },
+          { status: 403 }
+        );
+      }
+
       const validStatuses = ['active', 'inactive'];
       if (!validStatuses.includes(status)) {
         return NextResponse.json(
@@ -384,11 +502,13 @@ export async function PUT(request: NextRequest) {
     }
 
     if (phone !== undefined) {
-      userUpdates.phone = phone || null;
+      // ✅ SANITIZE PHONE
+      userUpdates.phone = phone ? sanitizeString(phone) : null;
     }
 
     if (address !== undefined) {
-      userUpdates.address = address || null;
+      // ✅ SANITIZE ADDRESS
+      userUpdates.address = address ? sanitizeString(address) : null;
     }
 
     if (lastLogin !== undefined) {
@@ -403,12 +523,26 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // Perform update on users table
+    // Perform update
     const updatedUser = await db
       .update(users)
       .set(userUpdates)
-      .where(eq(users.id, parseInt(id)))
+      .where(eq(users.id, targetUserId))
       .returning();
+
+    // Log update
+    await logAudit({
+      userId: currentUser.id,
+      action: AuditActions.UPDATE_USER,
+      resourceType: ResourceTypes.USER,
+      resourceId: targetUserId,
+      ...metadata,
+      details: { 
+        updatedFields: Object.keys(userUpdates),
+        targetUserEmail: updatedUser[0].email,
+        isSelfUpdate: currentUser.id === targetUserId,
+      },
+    });
 
     return NextResponse.json(sanitizeUser(updatedUser[0]), { status: 200 });
   } catch (error: any) {
@@ -422,6 +556,12 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    // Only admin can delete users
+    const authResult = await requireRole(request, ['admin']);
+    if (authResult instanceof NextResponse) return authResult;
+    const { user: currentUser } = authResult;
+
+    const metadata = getRequestMetadata(request);
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
@@ -433,11 +573,21 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
+    const targetUserId = parseInt(id);
+
+    // Prevent self-deletion
+    if (currentUser.id === targetUserId) {
+      return NextResponse.json(
+        { error: 'Vous ne pouvez pas supprimer votre propre compte', code: 'CANNOT_DELETE_SELF' },
+        { status: 400 }
+      );
+    }
+
     // Check if user exists
     const existingUser = await db
       .select()
       .from(users)
-      .where(eq(users.id, parseInt(id)))
+      .where(eq(users.id, targetUserId))
       .limit(1);
 
     if (existingUser.length === 0) {
@@ -447,11 +597,25 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // Delete user from users table
+    // Delete user
     const deleted = await db
       .delete(users)
-      .where(eq(users.id, parseInt(id)))
+      .where(eq(users.id, targetUserId))
       .returning();
+
+    // Log deletion
+    await logAudit({
+      userId: currentUser.id,
+      action: AuditActions.DELETE_USER,
+      resourceType: ResourceTypes.USER,
+      resourceId: targetUserId,
+      ...metadata,
+      details: { 
+        deletedUserEmail: deleted[0].email,
+        deletedUserRole: deleted[0].role,
+        deletedUserName: deleted[0].name,
+      },
+    });
 
     return NextResponse.json(
       {

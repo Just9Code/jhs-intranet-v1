@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { invoicesQuotes } from '@/db/schema';
-import { eq, like, and, or, gte, lte, desc, asc } from 'drizzle-orm';
+import { invoicesQuotes, chantiers } from '@/db/schema';
+import { eq, like, and, or, gte, lte, desc, asc, inArray } from 'drizzle-orm';
+import { requireAuth, requireRole } from '@/lib/rbac';
+import { logAudit, AuditActions, ResourceTypes } from '@/lib/audit-logger';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -13,6 +15,16 @@ interface InvoiceQuoteItem {
   quantity: number;
   unit_price: number;
   total: number;
+}
+
+// Helper to extract IP and User-Agent
+function getRequestMetadata(request: NextRequest) {
+  return {
+    ipAddress: request.headers.get('x-forwarded-for')?.split(',')[0] || 
+               request.headers.get('x-real-ip') || 
+               'unknown',
+    userAgent: request.headers.get('user-agent') || 'unknown',
+  };
 }
 
 function validateEmail(email: string): boolean {
@@ -58,6 +70,11 @@ function validateStatus(type: string, status: string): boolean {
 
 export async function GET(request: NextRequest) {
   try {
+    // Require authentication
+    const authResult = await requireAuth(request);
+    if (authResult instanceof NextResponse) return authResult;
+    const { user } = authResult;
+
     const searchParams = request.nextUrl.searchParams;
     const id = searchParams.get('id');
 
@@ -70,10 +87,12 @@ export async function GET(request: NextRequest) {
         );
       }
 
+      const invoiceQuoteId = parseInt(id);
+
       const record = await db
         .select()
         .from(invoicesQuotes)
-        .where(eq(invoicesQuotes.id, parseInt(id)))
+        .where(eq(invoicesQuotes.id, invoiceQuoteId))
         .limit(1);
 
       if (record.length === 0) {
@@ -81,6 +100,30 @@ export async function GET(request: NextRequest) {
           { error: 'Record not found', code: 'NOT_FOUND' },
           { status: 404 }
         );
+      }
+
+      // For clients: check if they own the chantier
+      if (user.role === 'client') {
+        if (record[0].chantierId) {
+          const chantier = await db
+            .select()
+            .from(chantiers)
+            .where(eq(chantiers.id, record[0].chantierId))
+            .limit(1);
+
+          if (chantier.length === 0 || chantier[0].clientId !== user.id) {
+            return NextResponse.json(
+              { error: 'Accès refusé - Cette facture ne vous appartient pas', code: 'FORBIDDEN' },
+              { status: 403 }
+            );
+          }
+        } else {
+          // No chantier associated, client cannot access
+          return NextResponse.json(
+            { error: 'Accès refusé', code: 'FORBIDDEN' },
+            { status: 403 }
+          );
+        }
       }
 
       return NextResponse.json(record[0], { status: 200 });
@@ -100,6 +143,24 @@ export async function GET(request: NextRequest) {
     const sortOrder = searchParams.get('order') ?? 'desc';
 
     const conditions = [];
+
+    // For clients: only show invoices/quotes from their chantiers
+    if (user.role === 'client') {
+      // Get all chantier IDs belonging to this client
+      const clientChantiers = await db
+        .select({ id: chantiers.id })
+        .from(chantiers)
+        .where(eq(chantiers.clientId, user.id));
+
+      const clientChantierIds = clientChantiers.map(c => c.id);
+
+      if (clientChantierIds.length === 0) {
+        // Client has no chantiers, return empty array
+        return NextResponse.json([], { status: 200 });
+      }
+
+      conditions.push(inArray(invoicesQuotes.chantierId, clientChantierIds));
+    }
 
     // Type filter
     if (type) {
@@ -153,7 +214,6 @@ export async function GET(request: NextRequest) {
     }
 
     // Build query
-    const validSortFields = ['issueDate', 'totalAmount', 'status', 'type'];
     const orderFn = sortOrder === 'asc' ? asc : desc;
     
     // Type-safe column selection
@@ -197,6 +257,12 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    // Only admin/travailleur can create invoices/quotes
+    const authResult = await requireRole(request, ['admin', 'travailleur']);
+    if (authResult instanceof NextResponse) return authResult;
+    const { user } = authResult;
+
+    const metadata = getRequestMetadata(request);
     const body = await request.json();
 
     // Validate required fields
@@ -320,6 +386,20 @@ export async function POST(request: NextRequest) {
 
     const newRecord = await db.insert(invoicesQuotes).values(insertData).returning();
 
+    // Log creation
+    await logAudit({
+      userId: user.id,
+      action: body.type === 'invoice' ? AuditActions.CREATE_INVOICE : AuditActions.CREATE_QUOTE,
+      resourceType: body.type === 'invoice' ? ResourceTypes.INVOICE : ResourceTypes.QUOTE,
+      resourceId: newRecord[0].id,
+      ...metadata,
+      details: { 
+        documentNumber: newRecord[0].documentNumber,
+        type: newRecord[0].type,
+        totalAmount: newRecord[0].totalAmount,
+      },
+    });
+
     return NextResponse.json(newRecord[0], { status: 201 });
   } catch (error: any) {
     console.error('POST error:', error);
@@ -332,6 +412,12 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    // Only admin/travailleur can update invoices/quotes
+    const authResult = await requireRole(request, ['admin', 'travailleur']);
+    if (authResult instanceof NextResponse) return authResult;
+    const { user } = authResult;
+
+    const metadata = getRequestMetadata(request);
     const searchParams = request.nextUrl.searchParams;
     const id = searchParams.get('id');
 
@@ -342,13 +428,14 @@ export async function PUT(request: NextRequest) {
       );
     }
 
+    const recordId = parseInt(id);
     const body = await request.json();
 
     // Check if record exists
     const existing = await db
       .select()
       .from(invoicesQuotes)
-      .where(eq(invoicesQuotes.id, parseInt(id)))
+      .where(eq(invoicesQuotes.id, recordId))
       .limit(1);
 
     if (existing.length === 0) {
@@ -381,7 +468,7 @@ export async function PUT(request: NextRequest) {
         .where(eq(invoicesQuotes.documentNumber, body.documentNumber.trim()))
         .limit(1);
 
-      if (existingDoc.length > 0 && existingDoc[0].id !== parseInt(id)) {
+      if (existingDoc.length > 0 && existingDoc[0].id !== recordId) {
         return NextResponse.json(
           { error: 'Document number already exists', code: 'DUPLICATE_DOCUMENT_NUMBER' },
           { status: 400 }
@@ -482,8 +569,21 @@ export async function PUT(request: NextRequest) {
     const updated = await db
       .update(invoicesQuotes)
       .set(updateData)
-      .where(eq(invoicesQuotes.id, parseInt(id)))
+      .where(eq(invoicesQuotes.id, recordId))
       .returning();
+
+    // Log update
+    await logAudit({
+      userId: user.id,
+      action: existing[0].type === 'invoice' ? AuditActions.UPDATE_INVOICE : AuditActions.UPDATE_QUOTE,
+      resourceType: existing[0].type === 'invoice' ? ResourceTypes.INVOICE : ResourceTypes.QUOTE,
+      resourceId: recordId,
+      ...metadata,
+      details: { 
+        changes: Object.keys(updateData).filter(k => k !== 'updatedAt'),
+        documentNumber: updated[0].documentNumber,
+      },
+    });
 
     return NextResponse.json(updated[0], { status: 200 });
   } catch (error: any) {
@@ -497,6 +597,12 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    // Only admin/travailleur can delete invoices/quotes
+    const authResult = await requireRole(request, ['admin', 'travailleur']);
+    if (authResult instanceof NextResponse) return authResult;
+    const { user } = authResult;
+
+    const metadata = getRequestMetadata(request);
     const searchParams = request.nextUrl.searchParams;
     const id = searchParams.get('id');
 
@@ -507,11 +613,13 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
+    const recordId = parseInt(id);
+
     // Check if record exists
     const existing = await db
       .select()
       .from(invoicesQuotes)
-      .where(eq(invoicesQuotes.id, parseInt(id)))
+      .where(eq(invoicesQuotes.id, recordId))
       .limit(1);
 
     if (existing.length === 0) {
@@ -523,8 +631,22 @@ export async function DELETE(request: NextRequest) {
 
     const deleted = await db
       .delete(invoicesQuotes)
-      .where(eq(invoicesQuotes.id, parseInt(id)))
+      .where(eq(invoicesQuotes.id, recordId))
       .returning();
+
+    // Log deletion
+    await logAudit({
+      userId: user.id,
+      action: deleted[0].type === 'invoice' ? AuditActions.DELETE_INVOICE : AuditActions.DELETE_QUOTE,
+      resourceType: deleted[0].type === 'invoice' ? ResourceTypes.INVOICE : ResourceTypes.QUOTE,
+      resourceId: recordId,
+      ...metadata,
+      details: { 
+        documentNumber: deleted[0].documentNumber,
+        type: deleted[0].type,
+        totalAmount: deleted[0].totalAmount,
+      },
+    });
 
     return NextResponse.json(
       {

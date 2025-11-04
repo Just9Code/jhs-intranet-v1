@@ -2,11 +2,28 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { stockMateriels } from '@/db/schema';
 import { eq, like, and } from 'drizzle-orm';
+import { requireRole } from '@/lib/rbac';
+import { logAudit, AuditActions, ResourceTypes } from '@/lib/audit-logger';
 
 const VALID_STATUSES = ['disponible', 'emprunte', 'maintenance'] as const;
 
+// Helper to extract IP and User-Agent
+function getRequestMetadata(request: NextRequest) {
+  return {
+    ipAddress: request.headers.get('x-forwarded-for')?.split(',')[0] || 
+               request.headers.get('x-real-ip') || 
+               'unknown',
+    userAgent: request.headers.get('user-agent') || 'unknown',
+  };
+}
+
 export async function GET(request: NextRequest) {
   try {
+    // Require admin or travailleur role
+    const authResult = await requireRole(request, ['admin', 'travailleur']);
+    if (authResult instanceof NextResponse) return authResult;
+    const { user } = authResult;
+
     const searchParams = request.nextUrl.searchParams;
     const id = searchParams.get('id');
 
@@ -71,6 +88,12 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    // Require admin or travailleur role
+    const authResult = await requireRole(request, ['admin', 'travailleur']);
+    if (authResult instanceof NextResponse) return authResult;
+    const { user } = authResult;
+
+    const metadata = getRequestMetadata(request);
     const body = await request.json();
     const { name, quantity, status } = body;
 
@@ -131,6 +154,20 @@ export async function POST(request: NextRequest) {
       })
       .returning();
 
+    // Log creation
+    await logAudit({
+      userId: user.id,
+      action: AuditActions.CREATE_STOCK_MATERIEL,
+      resourceType: ResourceTypes.STOCK_MATERIEL,
+      resourceId: newMateriel[0].id,
+      ...metadata,
+      details: { 
+        name: newMateriel[0].name,
+        quantity: newMateriel[0].quantity,
+        status: newMateriel[0].status,
+      },
+    });
+
     return NextResponse.json(newMateriel[0], { status: 201 });
 
   } catch (error) {
@@ -144,6 +181,12 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    // Require admin or travailleur role
+    const authResult = await requireRole(request, ['admin', 'travailleur']);
+    if (authResult instanceof NextResponse) return authResult;
+    const { user } = authResult;
+
+    const metadata = getRequestMetadata(request);
     const searchParams = request.nextUrl.searchParams;
     const id = searchParams.get('id');
 
@@ -157,13 +200,15 @@ export async function PUT(request: NextRequest) {
       );
     }
 
+    const materielId = parseInt(id);
+
     const body = await request.json();
     const { name, quantity, status } = body;
 
     // Check if materiel exists
     const existingMateriel = await db.select()
       .from(stockMateriels)
-      .where(eq(stockMateriels.id, parseInt(id)))
+      .where(eq(stockMateriels.id, materielId))
       .limit(1);
 
     if (existingMateriel.length === 0) {
@@ -229,8 +274,22 @@ export async function PUT(request: NextRequest) {
 
     const updatedMateriel = await db.update(stockMateriels)
       .set(updates)
-      .where(eq(stockMateriels.id, parseInt(id)))
+      .where(eq(stockMateriels.id, materielId))
       .returning();
+
+    // Log update
+    await logAudit({
+      userId: user.id,
+      action: AuditActions.UPDATE_STOCK_MATERIEL,
+      resourceType: ResourceTypes.STOCK_MATERIEL,
+      resourceId: materielId,
+      ...metadata,
+      details: { 
+        changes: Object.keys(updates).filter(k => k !== 'updatedAt'),
+        previousName: existingMateriel[0].name,
+        newName: updatedMateriel[0].name,
+      },
+    });
 
     return NextResponse.json(updatedMateriel[0], { status: 200 });
 
@@ -245,6 +304,12 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    // Require admin or travailleur role
+    const authResult = await requireRole(request, ['admin', 'travailleur']);
+    if (authResult instanceof NextResponse) return authResult;
+    const { user } = authResult;
+
+    const metadata = getRequestMetadata(request);
     const searchParams = request.nextUrl.searchParams;
     const id = searchParams.get('id');
 
@@ -258,10 +323,12 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
+    const materielId = parseInt(id);
+
     // Check if materiel exists
     const existingMateriel = await db.select()
       .from(stockMateriels)
-      .where(eq(stockMateriels.id, parseInt(id)))
+      .where(eq(stockMateriels.id, materielId))
       .limit(1);
 
     if (existingMateriel.length === 0) {
@@ -272,8 +339,21 @@ export async function DELETE(request: NextRequest) {
     }
 
     const deletedMateriel = await db.delete(stockMateriels)
-      .where(eq(stockMateriels.id, parseInt(id)))
+      .where(eq(stockMateriels.id, materielId))
       .returning();
+
+    // Log deletion
+    await logAudit({
+      userId: user.id,
+      action: AuditActions.DELETE_STOCK_MATERIEL,
+      resourceType: ResourceTypes.STOCK_MATERIEL,
+      resourceId: materielId,
+      ...metadata,
+      details: { 
+        deletedName: deletedMateriel[0].name,
+        deletedQuantity: deletedMateriel[0].quantity,
+      },
+    });
 
     return NextResponse.json(
       {

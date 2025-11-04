@@ -2,13 +2,32 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { chantiers } from '@/db/schema';
 import { eq, like, and, or, desc } from 'drizzle-orm';
+import { requireAuth, requirePermission, canAccessChantier } from '@/lib/rbac';
+import { logAudit, AuditActions, ResourceTypes } from '@/lib/audit-logger';
+import { sanitizeString, validateInput } from '@/lib/validation';
 
 const VALID_STATUSES = ['en_attente', 'en_cours', 'termine', 'annule'] as const;
 
+// Helper to extract IP and User-Agent
+function getRequestMetadata(request: NextRequest) {
+  return {
+    ipAddress: request.headers.get('x-forwarded-for')?.split(',')[0] || 
+               request.headers.get('x-real-ip') || 
+               'unknown',
+    userAgent: request.headers.get('user-agent') || 'unknown',
+  };
+}
+
 export async function GET(request: NextRequest) {
   try {
+    // Require authentication
+    const authResult = await requireAuth(request);
+    if (authResult instanceof NextResponse) return authResult;
+    const { user } = authResult;
+
     const searchParams = request.nextUrl.searchParams;
     const id = searchParams.get('id');
+    const metadata = getRequestMetadata(request);
 
     // Single chantier fetch
     if (id) {
@@ -19,10 +38,29 @@ export async function GET(request: NextRequest) {
         );
       }
 
+      const chantierId = parseInt(id);
+
+      // Check access: clients can only view their own chantiers
+      if (!await canAccessChantier(user, chantierId)) {
+        await logAudit({
+          userId: user.id,
+          action: AuditActions.VIEW_CHANTIER,
+          resourceType: ResourceTypes.CHANTIER,
+          resourceId: chantierId,
+          ...metadata,
+          details: { error: 'Access denied', role: user.role },
+        });
+
+        return NextResponse.json(
+          { error: 'Accès refusé - Ce chantier ne vous appartient pas', code: 'FORBIDDEN' },
+          { status: 403 }
+        );
+      }
+
       const chantier = await db
         .select()
         .from(chantiers)
-        .where(eq(chantiers.id, parseInt(id)))
+        .where(eq(chantiers.id, chantierId))
         .limit(1);
 
       if (chantier.length === 0) {
@@ -31,6 +69,15 @@ export async function GET(request: NextRequest) {
           { status: 404 }
         );
       }
+
+      // Log successful view
+      await logAudit({
+        userId: user.id,
+        action: AuditActions.VIEW_CHANTIER,
+        resourceType: ResourceTypes.CHANTIER,
+        resourceId: chantierId,
+        ...metadata,
+      });
 
       return NextResponse.json(chantier[0], { status: 200 });
     }
@@ -44,6 +91,11 @@ export async function GET(request: NextRequest) {
     const responsableId = searchParams.get('responsableId');
 
     const conditions = [];
+
+    // For clients: filter to show only their chantiers
+    if (user.role === 'client') {
+      conditions.push(eq(chantiers.clientId, user.id));
+    }
 
     // Search in name and address
     if (search) {
@@ -60,8 +112,8 @@ export async function GET(request: NextRequest) {
       conditions.push(eq(chantiers.status, status));
     }
 
-    // Filter by clientId
-    if (clientId && !isNaN(parseInt(clientId))) {
+    // Filter by clientId (only for admin/travailleur)
+    if (clientId && !isNaN(parseInt(clientId)) && user.role !== 'client') {
       conditions.push(eq(chantiers.clientId, parseInt(clientId)));
     }
 
@@ -97,6 +149,12 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    // Require permission to create chantiers (admin/travailleur only)
+    const authResult = await requirePermission(request, 'createChantier');
+    if (authResult instanceof NextResponse) return authResult;
+    const { user } = authResult;
+
+    const metadata = getRequestMetadata(request);
     const body = await request.json();
     const {
       name,
@@ -143,11 +201,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // ✅ SANITIZE INPUTS TO PREVENT XSS
+    const sanitizedName = sanitizeString(name);
+    const sanitizedAddress = sanitizeString(address);
+    const sanitizedDescription = description ? sanitizeString(description) : null;
+    const sanitizedNotes = notes ? sanitizeString(notes) : null;
+
+    // Validate for malicious patterns
+    const nameValidation = validateInput(name, 'Name');
+    if (!nameValidation.valid) {
+      return NextResponse.json(
+        { error: nameValidation.error, code: 'INVALID_INPUT' },
+        { status: 400 }
+      );
+    }
+
     // Prepare insert data
     const now = new Date().toISOString();
     const insertData: any = {
-      name: name.trim(),
-      address: address.trim(),
+      name: sanitizedName,
+      address: sanitizedAddress,
       status: status.trim(),
       createdAt: now,
       updatedAt: now,
@@ -170,15 +243,25 @@ export async function POST(request: NextRequest) {
       insertData.endDate = endDate;
     }
 
-    if (description) {
-      insertData.description = description.trim();
+    if (sanitizedDescription) {
+      insertData.description = sanitizedDescription;
     }
 
-    if (notes) {
-      insertData.notes = notes.trim();
+    if (sanitizedNotes) {
+      insertData.notes = sanitizedNotes;
     }
 
     const newChantier = await db.insert(chantiers).values(insertData).returning();
+
+    // Log creation
+    await logAudit({
+      userId: user.id,
+      action: AuditActions.CREATE_CHANTIER,
+      resourceType: ResourceTypes.CHANTIER,
+      resourceId: newChantier[0].id,
+      ...metadata,
+      details: { name: newChantier[0].name, status: newChantier[0].status },
+    });
 
     return NextResponse.json(newChantier[0], { status: 201 });
   } catch (error) {
@@ -192,6 +275,12 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    // Require permission to update chantiers (admin/travailleur only)
+    const authResult = await requirePermission(request, 'updateChantier');
+    if (authResult instanceof NextResponse) return authResult;
+    const { user } = authResult;
+
+    const metadata = getRequestMetadata(request);
     const searchParams = request.nextUrl.searchParams;
     const id = searchParams.get('id');
 
@@ -202,11 +291,13 @@ export async function PUT(request: NextRequest) {
       );
     }
 
+    const chantierId = parseInt(id);
+
     // Check if chantier exists
     const existing = await db
       .select()
       .from(chantiers)
-      .where(eq(chantiers.id, parseInt(id)))
+      .where(eq(chantiers.id, chantierId))
       .limit(1);
 
     if (existing.length === 0) {
@@ -241,7 +332,8 @@ export async function PUT(request: NextRequest) {
           { status: 400 }
         );
       }
-      updates.name = name.trim();
+      // ✅ SANITIZE INPUT
+      updates.name = sanitizeString(name);
     }
 
     if (address !== undefined) {
@@ -251,7 +343,8 @@ export async function PUT(request: NextRequest) {
           { status: 400 }
         );
       }
-      updates.address = address.trim();
+      // ✅ SANITIZE INPUT
+      updates.address = sanitizeString(address);
     }
 
     if (status !== undefined) {
@@ -292,18 +385,34 @@ export async function PUT(request: NextRequest) {
     }
 
     if (description !== undefined) {
-      updates.description = description === null ? null : description.trim();
+      // ✅ SANITIZE INPUT
+      updates.description = description === null ? null : sanitizeString(description);
     }
 
     if (notes !== undefined) {
-      updates.notes = notes === null ? null : notes.trim();
+      // ✅ SANITIZE INPUT
+      updates.notes = notes === null ? null : sanitizeString(notes);
     }
 
     const updated = await db
       .update(chantiers)
       .set(updates)
-      .where(eq(chantiers.id, parseInt(id)))
+      .where(eq(chantiers.id, chantierId))
       .returning();
+
+    // Log update
+    await logAudit({
+      userId: user.id,
+      action: AuditActions.UPDATE_CHANTIER,
+      resourceType: ResourceTypes.CHANTIER,
+      resourceId: chantierId,
+      ...metadata,
+      details: { 
+        changes: Object.keys(updates).filter(k => k !== 'updatedAt'),
+        previousName: existing[0].name,
+        newName: updated[0].name,
+      },
+    });
 
     return NextResponse.json(updated[0], { status: 200 });
   } catch (error) {
@@ -317,6 +426,12 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    // Require permission to delete chantiers (admin/travailleur only)
+    const authResult = await requirePermission(request, 'deleteChantier');
+    if (authResult instanceof NextResponse) return authResult;
+    const { user } = authResult;
+
+    const metadata = getRequestMetadata(request);
     const searchParams = request.nextUrl.searchParams;
     const id = searchParams.get('id');
 
@@ -327,11 +442,13 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
+    const chantierId = parseInt(id);
+
     // Check if chantier exists
     const existing = await db
       .select()
       .from(chantiers)
-      .where(eq(chantiers.id, parseInt(id)))
+      .where(eq(chantiers.id, chantierId))
       .limit(1);
 
     if (existing.length === 0) {
@@ -343,8 +460,21 @@ export async function DELETE(request: NextRequest) {
 
     const deleted = await db
       .delete(chantiers)
-      .where(eq(chantiers.id, parseInt(id)))
+      .where(eq(chantiers.id, chantierId))
       .returning();
+
+    // Log deletion
+    await logAudit({
+      userId: user.id,
+      action: AuditActions.DELETE_CHANTIER,
+      resourceType: ResourceTypes.CHANTIER,
+      resourceId: chantierId,
+      ...metadata,
+      details: { 
+        deletedName: deleted[0].name,
+        deletedStatus: deleted[0].status,
+      },
+    });
 
     return NextResponse.json(
       {

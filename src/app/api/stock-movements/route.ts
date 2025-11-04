@@ -2,12 +2,29 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { stockMovements } from '@/db/schema';
 import { eq, and, desc } from 'drizzle-orm';
+import { requireRole } from '@/lib/rbac';
+import { logAudit, AuditActions, ResourceTypes } from '@/lib/audit-logger';
 
 const VALID_ITEM_TYPES = ['materiau', 'materiel'];
 const VALID_ACTIONS = ['retrait', 'retour', 'ajout', 'suppression'];
 
+// Helper to extract IP and User-Agent
+function getRequestMetadata(request: NextRequest) {
+  return {
+    ipAddress: request.headers.get('x-forwarded-for')?.split(',')[0] || 
+               request.headers.get('x-real-ip') || 
+               'unknown',
+    userAgent: request.headers.get('user-agent') || 'unknown',
+  };
+}
+
 export async function GET(request: NextRequest) {
   try {
+    // Require admin or travailleur role
+    const authResult = await requireRole(request, ['admin', 'travailleur']);
+    if (authResult instanceof NextResponse) return authResult;
+    const { user } = authResult;
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
@@ -82,6 +99,12 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    // Require admin or travailleur role
+    const authResult = await requireRole(request, ['admin', 'travailleur']);
+    if (authResult instanceof NextResponse) return authResult;
+    const { user } = authResult;
+
+    const metadata = getRequestMetadata(request);
     const body = await request.json();
     const { itemType, itemId, userId, action, quantity, notes } = body;
 
@@ -166,6 +189,21 @@ export async function POST(request: NextRequest) {
       })
       .returning();
 
+    // Log creation
+    await logAudit({
+      userId: user.id,
+      action: AuditActions.CREATE_STOCK_MOVEMENT,
+      resourceType: ResourceTypes.STOCK_MOVEMENT,
+      resourceId: newMovement[0].id,
+      ...metadata,
+      details: { 
+        itemType: newMovement[0].itemType,
+        itemId: newMovement[0].itemId,
+        action: newMovement[0].action,
+        quantity: newMovement[0].quantity,
+      },
+    });
+
     return NextResponse.json(newMovement[0], { status: 201 });
   } catch (error) {
     console.error('POST error:', error);
@@ -177,6 +215,12 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    // Require admin or travailleur role
+    const authResult = await requireRole(request, ['admin', 'travailleur']);
+    if (authResult instanceof NextResponse) return authResult;
+    const { user } = authResult;
+
+    const metadata = getRequestMetadata(request);
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
@@ -187,10 +231,12 @@ export async function PUT(request: NextRequest) {
       }, { status: 400 });
     }
 
+    const movementId = parseInt(id);
+
     // Check if movement exists
     const existingMovement = await db.select()
       .from(stockMovements)
-      .where(eq(stockMovements.id, parseInt(id)))
+      .where(eq(stockMovements.id, movementId))
       .limit(1);
 
     if (existingMovement.length === 0) {
@@ -254,8 +300,22 @@ export async function PUT(request: NextRequest) {
 
     const updated = await db.update(stockMovements)
       .set(updates)
-      .where(eq(stockMovements.id, parseInt(id)))
+      .where(eq(stockMovements.id, movementId))
       .returning();
+
+    // Log update
+    await logAudit({
+      userId: user.id,
+      action: AuditActions.CREATE_STOCK_MOVEMENT,
+      resourceType: ResourceTypes.STOCK_MOVEMENT,
+      resourceId: movementId,
+      ...metadata,
+      details: { 
+        changes: Object.keys(updates),
+        previousAction: existingMovement[0].action,
+        newAction: updated[0].action,
+      },
+    });
 
     return NextResponse.json(updated[0], { status: 200 });
   } catch (error) {
@@ -268,6 +328,12 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    // Require admin or travailleur role
+    const authResult = await requireRole(request, ['admin', 'travailleur']);
+    if (authResult instanceof NextResponse) return authResult;
+    const { user } = authResult;
+
+    const metadata = getRequestMetadata(request);
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
@@ -278,10 +344,12 @@ export async function DELETE(request: NextRequest) {
       }, { status: 400 });
     }
 
+    const movementId = parseInt(id);
+
     // Check if movement exists
     const existingMovement = await db.select()
       .from(stockMovements)
-      .where(eq(stockMovements.id, parseInt(id)))
+      .where(eq(stockMovements.id, movementId))
       .limit(1);
 
     if (existingMovement.length === 0) {
@@ -292,8 +360,23 @@ export async function DELETE(request: NextRequest) {
     }
 
     const deleted = await db.delete(stockMovements)
-      .where(eq(stockMovements.id, parseInt(id)))
+      .where(eq(stockMovements.id, movementId))
       .returning();
+
+    // Log deletion
+    await logAudit({
+      userId: user.id,
+      action: AuditActions.CREATE_STOCK_MOVEMENT,
+      resourceType: ResourceTypes.STOCK_MOVEMENT,
+      resourceId: movementId,
+      ...metadata,
+      details: { 
+        deletedItemType: deleted[0].itemType,
+        deletedItemId: deleted[0].itemId,
+        deletedAction: deleted[0].action,
+        deletedQuantity: deleted[0].quantity,
+      },
+    });
 
     return NextResponse.json({ 
       message: 'Movement deleted successfully',

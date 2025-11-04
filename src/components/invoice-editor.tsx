@@ -1059,7 +1059,7 @@ export function InvoiceEditor({ document, onClose, viewMode: initialViewMode = f
                       
                       {/* Copyright */}
                       <p style={{ fontSize: '0.55rem', color: '#999999', textAlign: 'center', marginBottom: 0 }}>
-                        © 2023 JHS Entreprise - Tous droits réservés
+                        © 2025 JHS Entreprise - Tous droits réservés
                       </p>
                     </div>
                   </div>
